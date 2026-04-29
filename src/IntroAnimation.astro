@@ -1,0 +1,137 @@
+---
+// src/components/IntroAnimation.astro
+// No imports needed here since GSAP is imported in the client-side script block below.
+---
+
+<div id="animation-wrapper" class="relative w-full h-screen overflow-hidden bg-[#1a1a1a]">
+  
+  <!-- THE MASTER SVG -->
+  <svg id="master-scene" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" class="absolute w-full h-full object-cover opacity-0">
+    
+    <!-- LAYER 1: UNDERGROUND SOIL & CRACKS -->
+    <g id="layer1-soil">
+      <!-- Dark Soil Background -->
+      <rect id="bg-soil" width="1920" height="1080" fill="#1a1a1a" />
+      
+      <!-- Brick-colored cracks -->
+      <path id="cracks" d="M0,200 L400,300 L650,150 L900,400 L1200,250 L1500,450 L1920,300 
+               M400,300 L500,700 L200,900 M900,400 L1000,800 L1400,950 
+               M1500,450 L1700,800 L1920,700 M1000,800 L700,1080" 
+            stroke="#b24a2e" stroke-width="12" fill="none" stroke-linejoin="round" />
+    </g>
+
+    <!-- LAYER 2: SAPLING & ROOTS -->
+    <!-- Set to opacity 0 initially so GSAP can fade it in -->
+    <g id="layer2-sapling-roots" opacity="0">
+      
+      <!-- Sapling Stem & Leaves -->
+      <path d="M960,540 Q940,400 960,300" stroke="#4ade80" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <ellipse cx="920" cy="380" rx="40" ry="15" fill="#4ade80" transform="rotate(-30 920 380)" />
+      <ellipse cx="1000" cy="350" rx="40" ry="15" fill="#4ade80" transform="rotate(30 1000 350)" />
+      <ellipse cx="960" cy="280" rx="30" ry="12" fill="#4ade80" transform="rotate(-10 960 280)" />
+
+      <!-- Roots (Growing downward) -->
+      <g id="growing-roots" stroke="#6b4c3a" fill="none" stroke-linecap="round">
+        <path class="root" d="M960,540 Q900,700 700,850" stroke-width="10" />
+        <path class="root" d="M960,540 Q1050,650 1200,800" stroke-width="9" />
+        <path class="root" d="M900,700 Q800,850 850,1000" stroke-width="6" />
+        <path class="root" d="M1050,650 Q1150,750 1100,950" stroke-width="7" />
+        <path class="root" d="M960,540 Q950,800 980,1050" stroke-width="11" />
+      </g>
+    </g>
+
+    <!-- LAYER 3: ABOVE GROUND (TREE & DANCERS) -->
+    <!-- Positioned physically higher up (negative Y) so we can "pan" down to it -->
+    <g id="layer3-above-ground" transform="translate(0, -1080)">
+      
+      <!-- Sky / Background -->
+      <rect width="1920" height="1080" fill="#e8dcb8" />
+      
+      <!-- Ground / Plateau Terrain -->
+      <path d="M0,800 Q400,750 960,780 T1920,800 L1920,1080 L0,1080 Z" fill="#c49a6c" />
+      
+      <!-- Mature Banyan Trunk -->
+      <path d="M900,800 Q920,400 800,200 L1120,200 Q1000,400 1020,800 Z" fill="#5c4033" />
+      
+      <!-- Prop Roots -->
+      <path d="M700,300 L700,780 M750,250 L750,700 M1150,250 L1150,720 M1250,300 L1250,790" stroke="#4a332a" stroke-width="8" fill="none" />
+      
+      <!-- Banyan Canopy -->
+      <ellipse cx="960" cy="200" rx="600" ry="250" fill="#2e7d32" opacity="0.9" />
+      <ellipse cx="600" cy="250" rx="300" ry="150" fill="#1b5e20" opacity="0.8" />
+      <ellipse cx="1300" cy="250" rx="350" ry="180" fill="#388e3c" opacity="0.9" />
+
+      <!-- Tribal Dancers (Stylized Placeholders) -->
+      <g id="dancers" transform="translate(960, 850)">
+        <!-- Central circle representing the dancers holding hands -->
+        <ellipse cx="0" cy="0" rx="150" ry="40" fill="none" stroke="#d35400" stroke-width="6" stroke-dasharray="20 10"/>
+        <circle cx="-150" cy="0" r="15" fill="#c0392b" />
+        <circle cx="150" cy="0" r="15" fill="#8e44ad" />
+        <circle cx="0" cy="-40" r="15" fill="#2980b9" />
+        <circle cx="0" cy="40" r="15" fill="#27ae60" />
+        <circle cx="-100" cy="-30" r="15" fill="#f39c12" />
+        <circle cx="100" cy="30" r="15" fill="#d35400" />
+        <circle cx="100" cy="-30" r="15" fill="#16a085" />
+        <circle cx="-100" cy="30" r="15" fill="#c0392b" />
+      </g>
+    </g>
+
+  </svg>
+
+  <!-- LAYER 4: THE TITLE OVERLAY -->
+  <!-- Starts invisible (opacity-0) and slightly shifted down (translate-y-10) -->
+  <div id="title-layer" class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none translate-y-10">
+    <h1 class="text-[#e8dcb8] text-5xl md:text-7xl font-bold text-center drop-shadow-2xl" style="font-family: 'Georgia', serif;">
+      Hamar Chinhari<br/>Welfare Society
+    </h1>
+  </div>
+
+</div>
+
+<script>
+  import { gsap } from "gsap";
+
+  // Run the animation once the DOM is fully loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    
+    // SETUP: Calculate the exact length of each root path so we can animate it drawing
+    const roots = document.querySelectorAll('.root') as NodeListOf<SVGPathElement>;
+    roots.forEach(root => {
+      const length = root.getTotalLength();
+      // Set the dash array and offset to the total length (makes the line invisible)
+      gsap.set(root, { strokeDasharray: length, strokeDashoffset: length });
+    });
+
+    // Initialize the Master Timeline
+    const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
+
+    // SCENE 1: Screen fades in to cracked soil
+    tl.to("#master-scene", { opacity: 1, duration: 2 })
+
+    // SCENE 2: Sapling appears, roots grow, soil enriches, cracks dissolve
+      .to("#layer2-sapling-roots", { opacity: 1, duration: 1.5 }, "+=0.5")
+      // Animate the roots drawing themselves downward
+      .to(".root", { strokeDashoffset: 0, duration: 4, stagger: 0.3, ease: "power1.inOut" })
+      // Soil changes from black to rich soil color
+      .to("#bg-soil", { fill: "#4a332a", duration: 3 }, "-=3")
+      // Cracks slowly fade out as the soil binds
+      .to("#cracks", { opacity: 0, duration: 2.5 }, "-=2.5")
+
+    // SCENE 3: Camera pan up to the mature tree and dancers
+    // Move layers 1 & 2 down out of frame, move layer 3 down into frame
+      .to(["#layer1-soil", "#layer2-sapling-roots"], { y: 1080, duration: 3 }, "+=1.5")
+      .to("#layer3-above-ground", { y: 0, duration: 3 }, "<")
+
+    // SCENE 4: Background blurs slightly, Title reveals from the center
+      .to("#master-scene", { filter: "blur(6px) brightness(0.6)", duration: 1.5 }, "+=1")
+      .to("#title-layer", { opacity: 1, y: 0, duration: 1.5, ease: "back.out(1.2)" }, "-=1");
+
+  });
+</script>
+
+<style>
+  /* Optional: Ensures the wrapper prevents any scrollbars during the pan animation */
+  #animation-wrapper {
+    touch-action: none; 
+  }
+</style>
